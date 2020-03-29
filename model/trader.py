@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import datetime
 #https://towardsdatascience.com/deep-reinforcement-learning-build-a-deep-q-network-dqn-to-play-cartpole-with-tensorflow-2-and-gym-8e105744b998
 
 #1 define hyperparameters
@@ -7,10 +8,12 @@ import numpy as np
 #2 define q-network function:
 class Model(tf.keras.Model):
 
-    num_stocks = 500
+    #num_stocks = 500
     
-    def __init__(self, num_states, hidden_units, num_actions):
+    def __init__(self, num_states, hidden_units, num_stocks):
+        print("intialise Keras Model")
         super(Model, self).__init__()
+        self.num_stocks = num_stocks
         self.input_layer = tf.keras.layers.InputLayer(input_shape=(num_states,))
         self.hidden_layers = []
         #self.num_actions = num_actions
@@ -31,12 +34,13 @@ class Model(tf.keras.Model):
 
 class DQN:
     def __init__(self, num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr):
+        print("intialise dqn")
         #self.num_actions = num_actions
         self.num_stocks = num_stocks
         self.batch_size = batch_size
         self.optimizer = tf.optimizers.Adam(lr)
         self.gamma = gamma
-        self.model = Model(num_states, hidden_units, num_actions)
+        self.model = Model(num_states, hidden_units, num_stocks)
         self.experience = {'s': [], 'a': [], 'r': [], 's2': [], 'done': []}
         self.max_experiences = max_experiences
         self.min_experiences = min_experiences
@@ -97,21 +101,22 @@ class DQN:
             v1.assign(v2.numpy())
 
 #change function name to "run_trade_session"?
-def run_trade_session(env, TrainNet, TargetNet, epsilon, copy_step):
+def run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
     rewards = 0
     iter = 0
     done = False
     #observations = env.reset()
+    observations = market.reset()
     while not done:
-        action = TrainNet.get_action(observations, epsilon)
+        actions = TrainNet.get_action(observations, epsilon)
         prev_observations = observations
-        #observations, reward, done, _ = env.step(action)
+        observations, reward, done, _ = market.trade(actions)
         rewards += reward
         if done:
             reward = -200
-            #env.reset()
+            market.reset()
 
-        exp = {'s': prev_observations, 'a': action, 'r': reward, 's2': observations, 'done': done}
+        exp = {'s': prev_observations, 'a': actions, 'r': reward, 's2': observations, 'done': done}
         TrainNet.add_experience(exp)
         TrainNet.train(TargetNet)
         iter += 1
@@ -121,11 +126,11 @@ def run_trade_session(env, TrainNet, TargetNet, epsilon, copy_step):
         return rewards
 
 
-def run(env):
+def run(market):
     #env = gym.make('CartPole-v0')
     gamma = 0.99
     copy_step = 25
-    num_states = env.get_num_states()
+    num_states = market.get_num_states()
     #num_actions = env.action_space.n
     num_stocks = 500
     hidden_units = [200, 200]
@@ -146,7 +151,7 @@ def run(env):
     min_epsilon = 0.1
     for n in range(N):
         epsilon = max(min_epsilon, epsilon * decay)
-        total_reward = run_trade_session(env, TrainNet, TargetNet, epsilon, copy_step)
+        total_reward = run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step)
         total_rewards[n] = total_reward
         avg_rewards = total_rewards[max(0, n - 100):(n + 1)].mean()
         with summary_writer.as_default():
@@ -156,4 +161,4 @@ def run(env):
             print("episode:", n, "episode reward:", total_reward, "eps:", epsilon, "avg reward (last 100):", avg_rewards)
     print("avg reward for last 100 episodes:", avg_rewards)
     #make_video(env, TrainNet)
-    env.close()
+    #market.close()
