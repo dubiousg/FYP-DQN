@@ -63,7 +63,7 @@ class DQN:
 
         with tf.GradientTape() as tape:
             selected_action_values = tf.math.reduce_sum(
-                self.predict(states) * tf.one_hot(actions, self.num_actions), axis=1)
+                self.predict(states) * tf.one_hot(actions, self.num_stocks), axis=1)
             loss = tf.math.reduce_sum(tf.square(actual_values - selected_action_values))
         variables = self.model.trainable_variables
         gradients = tape.gradient(loss, variables)
@@ -72,7 +72,8 @@ class DQN:
     def get_action(self, states, epsilon):
         if np.random.random() < epsilon:
             #allocate weights summing up to one
-            stock_weights = np.random.dirichlet(np.ones(self.num_stocks), size = 1)
+            stock_weights = np.random.dirichlet(np.ones(self.num_stocks), size = 1)[0]
+            #print(stock_weights)
             #action = np.random.choice(self.num_stocks, self.num_stocks, )
         else:
             #change to return a predicted weight allocation
