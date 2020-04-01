@@ -4,6 +4,7 @@ import os
 from os import listdir
 from os.path import isfile, join
 import pandas as pd
+import numpy as np
 import sys
 
 day_global = 0 #day should correspond to the index of the current day
@@ -62,7 +63,7 @@ class Market_Environment:
 
         files = [f for f in listdir(folder) if isfile(join(folder, f))]
         for f in files:
-            df = pd.read_csv(join(folder, f))
+            df = pd.read_csv(join(folder, f), index_col=0)
             key = df['Name'][0]
 
             #drop the name from the data frame (less data handled)
@@ -89,11 +90,15 @@ class Market_Environment:
         next_state = []
         #should return largest length of all stocks
         if day_global + 1 < self.total_days:
-            i = 0
             for data in stock_data.values():
-                next_state.append(data.iloc[day_global + 1])
-                next_state[i].drop(columns=['Name', 'date'], axis=1)
-                i += 1
+                #print(data.drop(columns=['date'], axis=1))
+                needed_data = data.drop(columns=['date'], axis=1).iloc[day_global + 1]
+                #print(needed_data)
+                #needed_data = needed_data.drop(columns=['Name', 'date'])
+                #print(needed_data)
+                next_state.append(needed_data)
+                #next_state[i].drop(columns=['Name', 'date'], axis=1)
+                
         return next_state
 
     #represents a day of trading: 
@@ -113,7 +118,7 @@ class Market_Environment:
         float_int_scaler = 1 / minimum
 
         for stock, action in actions_dict.items():            
-            actions_dict[stock] =  round(action * float_int_scaler) #round to make sure it is an integer
+            actions_dict[stock] =  np.round(action * float_int_scaler) #round to make sure it is an integer
 
         for stock, action in actions_dict.items():           
             volume = action #volume bought or sold: + for bought - for sold
