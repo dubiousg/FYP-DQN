@@ -6,9 +6,11 @@ from os.path import isfile, join
 import pandas as pd
 import numpy as np
 import sys
+from benchmarking.timer import Timer
 
+timer = Timer()
 day_global = 0 #day should correspond to the index of the current day
-stock_data = {} #contains stock data of the market
+stock_data = None #contains stock data of the market
 
 
 class Portfolio:
@@ -61,6 +63,7 @@ class Market_Environment:
         folder = join(dir, stocks_folder)
         self.stock_names = []
 
+        stock_data_temp = {}
         files = [f for f in listdir(folder) if isfile(join(folder, f))]
         for f in files:
             df = pd.read_csv(join(folder, f), index_col=0)
@@ -70,8 +73,15 @@ class Market_Environment:
             df.drop(columns='Name', inplace=True)
             
             #add data to raw_stock_data dictonary
-            stock_data[key] = df
+            stock_data_temp[key] = df
             self.stock_names.append(key)
+
+        stock_data = np.zeros(len(self.stock_names), dtype={'names':['stock', 'data'],
+                          'formats':['U10', 'f4']})
+
+        stock_data['stock'] = self.stock_names
+        stock_data['data'] = stock_data_temp
+
 
         self.total_days = len(max(stock_data.values(), key = lambda x: len(x)))
         self.portfolio = Portfolio(self.stock_names)
@@ -87,17 +97,18 @@ class Market_Environment:
     def get_observations(self):
         #returns a list of dataframes
         global day_global
-        next_state = []
+        next_state = np.ndarray(shape=(len(stock_data),), dtype=pd.DataFrame)
         #should return largest length of all stocks
         if day_global + 1 < self.total_days:
+            i = 0
             for data in stock_data.values():
                 #print(data.drop(columns=['date'], axis=1))
                 needed_data = data.drop(columns=['date'], axis=1).iloc[day_global + 1]
-                #print(needed_data)
-                #needed_data = needed_data.drop(columns=['Name', 'date'])
-                #print(needed_data)
-                next_state.append(needed_data)
-                #next_state[i].drop(columns=['Name', 'date'], axis=1)
+
+                next_state[i] = needed_data
+                #next_state.append(needed_data)
+
+                i += 1
                 
         return next_state
 
@@ -110,6 +121,8 @@ class Market_Environment:
         actions_dict = {}
         minimum = sys.float_info.max
         
+        timer.start_timer()
+
         for i in range(len(actions)):
             actions_dict[self.stock_names[i]] = actions[i] 
             if minimum < actions[i]:
@@ -117,8 +130,16 @@ class Market_Environment:
 
         float_int_scaler = 1 / minimum
 
+        print("loading action dict: " + str(timer.get_time()))
+
+        timer.start_timer()
+
         for stock, action in actions_dict.items():            
             actions_dict[stock] =  np.round(action * float_int_scaler) #round to make sure it is an integer
+
+        print("manipulate dict: " + str(timer.get_time()))
+
+        timer.start_timer()
 
         for stock, action in actions_dict.items():           
             volume = action #volume bought or sold: + for bought - for sold
@@ -126,12 +147,17 @@ class Market_Environment:
             cash_change = cash_change * (- volume)
             self.portfolio.update_stock(stock, volume, cash_change)    
 
+        print("updating stocks: " + str(timer.get_time()))
+
         day_global += 1
         
+        timer.start_timer()
         observations = self.get_observations()
-        
-        reward = self.compute_rewards()
+        print("get_obsverations: " + str(timer.get_time()))
 
+        timer.start_timer()
+        reward = self.compute_rewards()
+        print("compute_rewards: " + str(timer.get_time()))
         done = (day_global + 1 == self.total_days)
 
         return observations, reward, done

@@ -1,9 +1,10 @@
 import tensorflow as tf
 import numpy as np
 import datetime
+from benchmarking.timer import Timer
 #https://towardsdatascience.com/deep-reinforcement-learning-build-a-deep-q-network-dqn-to-play-cartpole-with-tensorflow-2-and-gym-8e105744b998
 
-
+timer = Timer()
 
 #2 define q-network function:
 class Model(tf.keras.Model):
@@ -109,9 +110,14 @@ def run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
     #observations = env.reset()
     observations = market.reset()
     while not done:
+        
         actions = TrainNet.get_action(observations, epsilon)
+        
         prev_observations = observations
+        timer.start_timer()
         observations, reward, done = market.trade(actions)
+        print("trading " + str(timer.get_time()))
+        
         rewards += reward
         if done:
             reward = -200
@@ -123,7 +129,7 @@ def run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
         iter += 1
         if iter % copy_step == 0:
             TargetNet.copy_weights(TrainNet)
-            
+        
         return rewards
 
 
@@ -145,7 +151,7 @@ def run(market):
 
     TrainNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
     TargetNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
-    N = 500
+    N = 10
     total_rewards = np.empty(N)
     epsilon = 0.99
     decay = 0.9999
