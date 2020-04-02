@@ -10,7 +10,7 @@ from benchmarking.timer import Timer
 
 timer = Timer()
 day_global = 0 #day should correspond to the index of the current day
-stock_data = None #contains stock data of the market
+stock_data = np.ones(1)
 
 
 class Portfolio:
@@ -24,7 +24,7 @@ class Portfolio:
         for stock in stock_names:
             self.stocks[stock] = 0
 
-        print(self.stocks)
+        #print(self.stocks)
         #todo
     
     def update_stock(self, stock, volume, cash_change):
@@ -35,10 +35,11 @@ class Portfolio:
         self.cash += cash_change
 
     def update_value(self):
-        global day_global
+        global day_global, stock_data
         temp_total = self.cash
         for stock in self.stocks:
-            temp_total += (self.stocks[stock] * stock_data[stock].iloc[day_global]['close'])
+            key = stock_data['stock'] == stock
+            temp_total += (self.stocks[stock] * stock_data[key].iloc[day_global]['close'])
 
         self.total_value = temp_total
 
@@ -54,10 +55,13 @@ class Portfolio:
 
 #contains the trader's portfolio info: stocks, cash, total value,  
 
+#contains stock data of the market
+
 class Market_Environment:
     portfolio = None
     #read in the clean stock and store them
     def __init__(self, stocks_folder):
+        global stock_data
         print("initialising market")
         dir = os.getcwd() + "/Dissertation_Project/data"
         folder = join(dir, stocks_folder)
@@ -72,18 +76,20 @@ class Market_Environment:
             #drop the name from the data frame (less data handled)
             df.drop(columns='Name', inplace=True)
             
-            #add data to raw_stock_data dictonary
-            stock_data_temp[key] = df
+            #add data to raw_stock_data dictonary, converted to numpy
+            stock_data_temp[key] = df.to_numpy()
             self.stock_names.append(key)
 
+        d_type = np.dtype(stock_data_temp['A'].dtype)
+
         stock_data = np.zeros(len(self.stock_names), dtype={'names':['stock', 'data'],
-                          'formats':['U10', 'f4']})
+                          'formats':['U10', d_type]})
 
         stock_data['stock'] = self.stock_names
         stock_data['data'] = stock_data_temp
 
-
-        self.total_days = len(max(stock_data.values(), key = lambda x: len(x)))
+        #print(stock_data[stock_data['stock'] == 'A'])
+        self.total_days = len(max(stock_data_temp.values(), key = lambda x: len(x)))
         self.portfolio = Portfolio(self.stock_names)
     #provide portfolio data, (from this possible actions can be computed)
     
@@ -96,12 +102,14 @@ class Market_Environment:
 
     def get_observations(self):
         #returns a list of dataframes
-        global day_global
-        next_state = np.ndarray(shape=(len(stock_data),), dtype=pd.DataFrame)
+        global day_global, stock_data
+        #print(stock_data['data'][0]['A'].dtype)
+        d_type = stock_data['data'][0]['A'].dtype
+        next_state = np.ndarray(shape=(len(stock_data['data']),), dtype=d_type)
         #should return largest length of all stocks
         if day_global + 1 < self.total_days:
             i = 0
-            for data in stock_data.values():
+            for data in stock_data['data'][0]:
                 #print(data.drop(columns=['date'], axis=1))
                 needed_data = data.drop(columns=['date'], axis=1).iloc[day_global + 1]
 
@@ -117,7 +125,7 @@ class Market_Environment:
     #actions are subjected to conditions such that it cannot buy/sell more stocks that is possible
     def trade(self, actions):        
         #convert actions
-        global day_global
+        global day_global, stock_data
         actions_dict = {}
         minimum = sys.float_info.max
         
@@ -143,7 +151,8 @@ class Market_Environment:
 
         for stock, action in actions_dict.items():           
             volume = action #volume bought or sold: + for bought - for sold
-            cash_change = stock_data[stock].iloc[day_global]['close'] #the cash recieved or taken from buying or selling a stock 
+            key = stock_data['stock'] == stock
+            cash_change = stock_data[key].iloc[day_global]['close'] #the cash recieved or taken from buying or selling a stock 
             cash_change = cash_change * (- volume)
             self.portfolio.update_stock(stock, volume, cash_change)    
 
