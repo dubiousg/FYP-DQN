@@ -37,9 +37,10 @@ class Portfolio:
     def update_value(self):
         global day_global, stock_data
         temp_total = self.cash
-        for stock in self.stocks:
-            key = stock_data['stock'] == stock
-            temp_total += (self.stocks[stock] * stock_data[key].iloc[day_global]['close'])
+        #for stock in self.stocks:
+        for i in range(0, len(stock_data['data'])):
+            stock = stock_data['stock'][i]
+            temp_total += (self.stocks[stock] * stock_data['data'][i][day_global][4])
 
         self.total_value = temp_total
 
@@ -67,7 +68,8 @@ class Market_Environment:
         folder = join(dir, stocks_folder)
         self.stock_names = []
 
-        stock_data_temp = {}
+        #stock_data_temp = {}
+        stock_data_temp = []
         files = [f for f in listdir(folder) if isfile(join(folder, f))]
         for f in files:
             df = pd.read_csv(join(folder, f), index_col=0)
@@ -77,19 +79,19 @@ class Market_Environment:
             df.drop(columns='Name', inplace=True)
             
             #add data to raw_stock_data dictonary, converted to numpy
-            stock_data_temp[key] = df.to_numpy()
+            stock_data_temp.append(df.to_numpy())
             self.stock_names.append(key)
 
-        d_type = np.dtype(stock_data_temp['A'].dtype)
+        d_type = np.dtype(stock_data_temp[0].dtype)
 
         stock_data = np.zeros(len(self.stock_names), dtype={'names':['stock', 'data'],
                           'formats':['U10', d_type]})
 
         stock_data['stock'] = self.stock_names
+        #print(stock_data_temp.values())
         stock_data['data'] = stock_data_temp
 
-        #print(stock_data[stock_data['stock'] == 'A'])
-        self.total_days = len(max(stock_data_temp.values(), key = lambda x: len(x)))
+        self.total_days = len(max(stock_data_temp, key = lambda x: len(x)))
         self.portfolio = Portfolio(self.stock_names)
     #provide portfolio data, (from this possible actions can be computed)
     
@@ -104,14 +106,14 @@ class Market_Environment:
         #returns a list of dataframes
         global day_global, stock_data
         #print(stock_data['data'][0]['A'].dtype)
-        d_type = stock_data['data'][0]['A'].dtype
+        d_type = stock_data['data'][0].dtype
         next_state = np.ndarray(shape=(len(stock_data['data']),), dtype=d_type)
         #should return largest length of all stocks
         if day_global + 1 < self.total_days:
             i = 0
-            for data in stock_data['data'][0]:
+            for data in stock_data['data']:
                 #print(data.drop(columns=['date'], axis=1))
-                needed_data = data.drop(columns=['date'], axis=1).iloc[day_global + 1]
+                needed_data = data[day_global + 1][1:]
 
                 next_state[i] = needed_data
                 #next_state.append(needed_data)
@@ -152,7 +154,8 @@ class Market_Environment:
         for stock, action in actions_dict.items():           
             volume = action #volume bought or sold: + for bought - for sold
             key = stock_data['stock'] == stock
-            cash_change = stock_data[key].iloc[day_global]['close'] #the cash recieved or taken from buying or selling a stock 
+            data_array = stock_data[key][0][1]
+            cash_change = data_array[day_global][4] #the cash recieved or taken from buying or selling a stock 
             cash_change = cash_change * (- volume)
             self.portfolio.update_stock(stock, volume, cash_change)    
 

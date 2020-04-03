@@ -151,13 +151,14 @@ def run(market):
 
     TrainNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
     TargetNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
-    N = 10
+    N = 200
     total_rewards = np.empty(N)
     epsilon = 0.99
     decay = 0.9999
     min_epsilon = 0.1
     for n in range(N):
         epsilon = max(min_epsilon, epsilon * decay)
+        print("running trade session: " + str(n))
         total_reward = run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step)
         total_rewards[n] = total_reward
         avg_rewards = total_rewards[max(0, n - 100):(n + 1)].mean()
