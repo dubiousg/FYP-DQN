@@ -47,7 +47,19 @@ class DQN:
         self.min_experiences = min_experiences
 
     def predict(self, inputs):
-        return self.model(np.atleast_2d(inputs.astype('float32')))
+        inputs = inputs[0]
+        i = 0
+
+        stock_weights = np.empty(shape=len(inputs))
+        for inp in inputs:
+            inp.astype('float32')
+            inp = np.atleast_2d(inp)
+            #inp = np.asarray(inp)
+            stock_weights[i] = self.model(inp)
+            i += 1
+        #ins = tf.convert_to_tensor(ins, dtype=tf.float32)
+        return stock_weights
+        #return self.model(np.atleast_2d(inputs.astype('float32')))
 
     @tf.function
     def train(self, TargetNet):
