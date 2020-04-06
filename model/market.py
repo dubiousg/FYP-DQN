@@ -133,7 +133,7 @@ class Market_Environment:
         
         timer.start_timer()
 
-        for i in range(len(actions)):
+        for i in range(actions.size):
             actions_dict[self.stock_names[i]] = actions[i] 
             if minimum < actions[i]:
                 minimum = actions[i]

@@ -1,9 +1,13 @@
+import math
 import tensorflow as tf
+from tensorflow import keras
 import numpy as np
 import datetime
 from benchmarking.timer import Timer
 #https://towardsdatascience.com/deep-reinforcement-learning-build-a-deep-q-network-dqn-to-play-cartpole-with-tensorflow-2-and-gym-8e105744b998
+tf.executing_eagerly() 
 
+#tf.compat.v1.enable_eager_execution()
 timer = Timer()
 
 #2 define q-network function:
@@ -18,19 +22,25 @@ class Model(tf.keras.Model):
         self.input_layer = tf.keras.layers.InputLayer(input_shape=(num_states,))
         self.hidden_layers = []
         #self.num_actions = num_actions
+        
+
         for i in hidden_units:
             self.hidden_layers.append(tf.keras.layers.Dense(
                 i, activation='tanh', kernel_initializer='RandomNormal'))
         self.output_layer = tf.keras.layers.Dense(
-            self.num_stocks, activation='linear', kernel_initializer='RandomNormal')
+            1, activation='linear', kernel_initializer='RandomNormal')
 
     @tf.function
     def call(self, inputs):
         z = self.input_layer(inputs)
+        print(z)
         for layer in self.hidden_layers:
             z = layer(z)
-
-        output = self.output_layer(z)
+            print(z)
+        z = self.output_layer(z) 
+        output = keras.activations.relu(z, alpha=0.0, max_value=1, threshold=0.0)
+        #with tf.Session() as sess:  
+        #print(output[0])
         return output
 
 class DQN:
@@ -49,13 +59,23 @@ class DQN:
     def predict(self, inputs):
         inputs = inputs[0]
         i = 0
-
-        stock_weights = np.empty(shape=len(inputs))
+        stock_weights = np.empty(shape=len(inputs), dtype=np.float32)
         for inp in inputs:
-            inp.astype('float32')
+            for i in range(inp.size):
+                if math.isnan(inp[i]):
+                    inp[i] = 0
+
+            inp = np.array(inp, dtype=np.float32)
             inp = np.atleast_2d(inp)
             #inp = np.asarray(inp)
-            stock_weights[i] = self.model(inp)
+            inp = self.model(inp)
+            inp = inp.numpy()[0][0]
+            #init = tf.compat.v1.global_variables_initializer()
+            #with tf.compat.v1.Session() as sess:
+                #sess.run(init)
+                #inp = sess.run(inp)
+                #inp = inp.numpy()
+            stock_weights[i] = inp
             i += 1
         #ins = tf.convert_to_tensor(ins, dtype=tf.float32)
         return stock_weights
@@ -91,7 +111,7 @@ class DQN:
         else:
             #change to return a predicted weight allocation
             #action = np.argmax(self.predict(np.atleast_2d(states))[0])
-            stock_weights = self.predict(np.atleast_2d(states))[0]
+            stock_weights = self.predict(np.atleast_2d(states))
         return stock_weights
 
     '''
@@ -142,7 +162,7 @@ def run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
         if iter % copy_step == 0:
             TargetNet.copy_weights(TrainNet)
         
-        return rewards
+    return rewards
 
 
 def run(market):
