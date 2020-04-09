@@ -146,9 +146,9 @@ def run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
         actions = TrainNet.get_action(observations, epsilon)
         
         prev_observations = observations
-        timer.start_timer()
+        #timer.start_timer()
         observations, reward, done = market.trade(actions)
-        print("trading " + str(timer.get_time()))
+        #print("trading " + str(timer.get_time()))
         
         rewards += reward
         if done:

@@ -40,8 +40,16 @@ class Portfolio:
         #for stock in self.stocks:
         for i in range(0, len(stock_data['data'])):
             stock = stock_data['stock'][i]
-            temp_total += (self.stocks[stock] * stock_data['data'][i][day_global][4])
 
+            #check if stock is still in circulation
+            if day_global < len(stock_data['data'][i]):
+                temp_total += (self.stocks[stock] * stock_data['data'][i][day_global][4])
+            elif day_global == len(stock_data['data'][i]): #sell all stock with last previous value if no longer in circulation
+                temp_total -= self.cash
+                cash_change = self.stocks[stock] * stock_data['data'][i][day_global - 1][4]
+                self.update_stock(stock, -self.stocks[stock], cash_change)
+                temp_total += self.cash
+                #temp_total += (self.stocks[stock] * stock_data['data'][i][day_global - 1][4])
         self.total_value = temp_total
 
     def get_total_value(self):
@@ -112,11 +120,13 @@ class Market_Environment:
         if day_global + 1 < self.total_days:
             i = 0
             for data in stock_data['data']:
-                #print(data.drop(columns=['date'], axis=1))
-                needed_data = data[day_global + 1][1:]
+
+                if day_global + 1 < len(data):
+                    needed_data = data[day_global + 1][1:]
+                else:
+                    needed_data = np.zeros(10)
 
                 next_state[i] = needed_data
-                #next_state.append(needed_data)
 
                 i += 1
                 
@@ -131,25 +141,29 @@ class Market_Environment:
         actions_dict = {}
         minimum = sys.float_info.max
         
-        timer.start_timer()
+        #timer.start_timer()
 
         for i in range(actions.size):
-            actions_dict[self.stock_names[i]] = actions[i] 
-            if minimum < actions[i]:
-                minimum = actions[i]
+
+            #check if stock is available
+            if day_global < len(stock_data[stock_data['stock'] == self.stock_names[i]]):
+                actions_dict[self.stock_names[i]] = actions[i] 
+
+                if minimum < actions[i]:
+                    minimum = actions[i]
 
         float_int_scaler = 1 / minimum
 
-        print("loading action dict: " + str(timer.get_time()))
+        #print("loading action dict: " + str(timer.get_time()))
 
-        timer.start_timer()
+        #timer.start_timer()
 
         for stock, action in actions_dict.items():            
             actions_dict[stock] =  np.round(action * float_int_scaler) #round to make sure it is an integer
 
-        print("manipulate dict: " + str(timer.get_time()))
+        #print("manipulate dict: " + str(timer.get_time()))
 
-        timer.start_timer()
+        #timer.start_timer()
 
         for stock, action in actions_dict.items():           
             volume = action #volume bought or sold: + for bought - for sold
@@ -159,17 +173,17 @@ class Market_Environment:
             cash_change = cash_change * (- volume)
             self.portfolio.update_stock(stock, volume, cash_change)    
 
-        print("updating stocks: " + str(timer.get_time()))
+        #print("updating stocks: " + str(timer.get_time()))
 
         day_global += 1
         
-        timer.start_timer()
+        #timer.start_timer()
         observations = self.get_observations()
-        print("get_obsverations: " + str(timer.get_time()))
+        #print("get_obsverations: " + str(timer.get_time()))
 
-        timer.start_timer()
+        #timer.start_timer()
         reward = self.compute_rewards()
-        print("compute_rewards: " + str(timer.get_time()))
+        #print("compute_rewards: " + str(timer.get_time()))
         done = (day_global + 1 == self.total_days)
 
         return observations, reward, done
