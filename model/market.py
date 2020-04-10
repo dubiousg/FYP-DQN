@@ -142,29 +142,32 @@ class Market_Environment:
         minimum = sys.float_info.max
         
         #timer.start_timer()
-
+        total = 0
         for i in range(actions.size):
 
             #check if stock is available
             if day_global < len(stock_data[stock_data['stock'] == self.stock_names[i]]):
                 actions_dict[self.stock_names[i]] = actions[i] 
 
-                if minimum < actions[i]:
-                    minimum = actions[i]
+                total += actions[i]
+                #if actions[i] < minimum:
+                #    minimum = actions[i]
 
-        float_int_scaler = 1 / minimum
+        #float_int_scaler = 1 / minimum
 
         #print("loading action dict: " + str(timer.get_time()))
 
         #timer.start_timer()
 
-        for stock, action in actions_dict.items():            
-            actions_dict[stock] =  np.round(action * float_int_scaler) #round to make sure it is an integer
+        for stock, action in actions_dict.items():       
+            actions_dict[stock] = action / total #make all actions sum to 1 
+            #actions_dict[stock] =  np.round(action * float_int_scaler) #round to make sure it is an integer
 
         #print("manipulate dict: " + str(timer.get_time()))
 
         #timer.start_timer()
-
+        self.portfolio.update(actions_dicti)
+        #all of this should be handled by the portfolio class
         for stock, action in actions_dict.items():           
             volume = action #volume bought or sold: + for bought - for sold
             key = stock_data['stock'] == stock
