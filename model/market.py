@@ -29,6 +29,18 @@ class Portfolio:
         #todo
     
     def update(self, actions_dict):
+        #sell all stocks before resetting weights
+        for stock, volume in self.stocks.items():
+
+            key = stock_data['stock'] == stock
+            data_array = stock_data[key][0][1]
+            if day_global < len(data_array):
+                cash_change = data_array[day_global][4] #the cash recieved or taken from buying or selling a stock 
+                cash_change = cash_change * volume
+
+                self.update_stock(stock, -volume, cash_change)
+
+
         for stock, action in actions_dict.items():           
             volume = np.round(action * self.total_value)
 
@@ -49,6 +61,7 @@ class Portfolio:
     def update_value(self):
         global day_global, stock_data
         temp_total = self.cash
+
         #for stock in self.stocks:
         for i in range(0, len(stock_data['data'])):
             stock = stock_data['stock'][i]
