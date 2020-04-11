@@ -38,7 +38,7 @@ class Model(tf.keras.Model):
             z = layer(z)
             print(z)
         z = self.output_layer(z) 
-        output = keras.activations.relu(z, alpha=0.0, max_value=1, threshold=0.0)
+        output = keras.activations.relu(z, alpha=0, max_value=None, threshold=0)
         #with tf.Session() as sess:  
         #print(output[0])
         return output

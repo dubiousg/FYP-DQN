@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import sys
 from benchmarking.timer import Timer
+import math
 
 timer = Timer()
 day_global = 0 #day should correspond to the index of the current day
@@ -27,6 +28,17 @@ class Portfolio:
         #print(self.stocks)
         #todo
     
+    def update(self, actions_dict):
+        for stock, action in actions_dict.items():           
+            volume = np.round(action * self.total_value)
+
+            key = stock_data['stock'] == stock
+            data_array = stock_data[key][0][1]
+            cash_change = data_array[day_global][4] #the cash recieved or taken from buying or selling a stock 
+            cash_change = cash_change * (- volume)
+
+            self.update_stock(stock, volume, cash_change)
+
     def update_stock(self, stock, volume, cash_change):
         #print("current stock:" + stock)
         #print(self.stocks)
@@ -139,19 +151,26 @@ class Market_Environment:
         #convert actions
         global day_global, stock_data
         actions_dict = {}
-        minimum = sys.float_info.max
+        #minimum = sys.float_info.max
         
         #timer.start_timer()
         total = 0
         for i in range(actions.size):
 
             #check if stock is available
-            if day_global < len(stock_data[stock_data['stock'] == self.stock_names[i]]):
+            sd = stock_data[stock_data['stock'] == self.stock_names[i]]
+            sd = sd[0]['data']
+            if day_global < len(sd):
                 actions_dict[self.stock_names[i]] = actions[i] 
+
+                if math.isnan(actions[i]) or actions[i] < 0:
+                    actions[i] = 0
 
                 total += actions[i]
                 #if actions[i] < minimum:
                 #    minimum = actions[i]
+        if total == 0:
+            total = 1
 
         #float_int_scaler = 1 / minimum
 
@@ -166,15 +185,16 @@ class Market_Environment:
         #print("manipulate dict: " + str(timer.get_time()))
 
         #timer.start_timer()
-        self.portfolio.update(actions_dicti)
+        self.portfolio.update(actions_dict)
         #all of this should be handled by the portfolio class
+        '''
         for stock, action in actions_dict.items():           
             volume = action #volume bought or sold: + for bought - for sold
             key = stock_data['stock'] == stock
             data_array = stock_data[key][0][1]
             cash_change = data_array[day_global][4] #the cash recieved or taken from buying or selling a stock 
             cash_change = cash_change * (- volume)
-            self.portfolio.update_stock(stock, volume, cash_change)    
+            self.portfolio.update_stock(stock, volume, cash_change)    '''
 
         #print("updating stocks: " + str(timer.get_time()))
 
@@ -188,6 +208,9 @@ class Market_Environment:
         reward = self.compute_rewards()
         #print("compute_rewards: " + str(timer.get_time()))
         done = (day_global + 1 == self.total_days)
+
+        if math.isnan(reward):
+            abc = 0 
 
         return observations, reward, done
 
