@@ -7,9 +7,11 @@ import pandas as pd
 import numpy as np
 import sys
 from benchmarking.timer import Timer
+from benchmarking.unittesting import Tester 
 import math
 
 timer = Timer()
+tester = Tester()
 day_global = 0 #day should correspond to the index of the current day
 stock_data = np.ones(1)
 
@@ -38,24 +40,29 @@ class Portfolio:
                 cash_change = data_array[day_global][4] #the cash recieved or taken from buying or selling a stock 
                 cash_change = cash_change * volume
 
+                tester.test_equal(volume % 1, 0)
                 self.update_stock(stock, -volume, cash_change)
 
 
         for stock, action in actions_dict.items():           
-            volume = np.round(action * self.total_value)
+            volume = np.floor(action * self.total_value)
 
             key = stock_data['stock'] == stock
             data_array = stock_data[key][0][1]
             cash_change = data_array[day_global][4] #the cash recieved or taken from buying or selling a stock 
             cash_change = cash_change * (- volume)
+            if volume % 1 != 0:
+                gppd == 0
 
+            tester.test_equal(volume % 1, 0)
             self.update_stock(stock, volume, cash_change)
 
     def update_stock(self, stock, volume, cash_change):
-        #print("current stock:" + stock)
-        #print(self.stocks)
-        #print(stock in self.stocks.keys())
         self.stocks[stock] += volume
+        if self.stocks[stock] % 1 != 0:
+            gggg = 0
+        tester.test_equal(self.stocks[stock] % 1, 0)
+
         self.cash += cash_change
 
     def update_value(self):
@@ -68,11 +75,17 @@ class Portfolio:
 
             #check if stock is still in circulation
             if day_global < len(stock_data['data'][i]):
+                tedee = stock_data['data'][i][day_global][4]
                 temp_total += (self.stocks[stock] * stock_data['data'][i][day_global][4])
+                if math.isnan(temp_total):
+                    abdc = 0
+                tester.test_not_nan(temp_total)
             elif day_global == len(stock_data['data'][i]): #sell all stock with last previous value if no longer in circulation
                 temp_total -= self.cash
                 cash_change = self.stocks[stock] * stock_data['data'][i][day_global - 1][4]
+                tester.test_equal(self.stocks[stock] % 1, 0)
                 self.update_stock(stock, -self.stocks[stock], cash_change)
+                tester.test_not_nan(temp_total)
                 temp_total += self.cash
                 #temp_total += (self.stocks[stock] * stock_data['data'][i][day_global - 1][4])
         self.total_value = temp_total
@@ -164,9 +177,7 @@ class Market_Environment:
         #convert actions
         global day_global, stock_data
         actions_dict = {}
-        #minimum = sys.float_info.max
-        
-        #timer.start_timer()
+
         total = 0
         for i in range(actions.size):
 
@@ -174,28 +185,25 @@ class Market_Environment:
             sd = stock_data[stock_data['stock'] == self.stock_names[i]]
             sd = sd[0]['data']
             if day_global < len(sd):
-                actions_dict[self.stock_names[i]] = actions[i] 
-
                 if math.isnan(actions[i]) or actions[i] < 0:
                     actions[i] = 0
 
+                tester.test_not_nan(actions[i])
+
+                actions_dict[self.stock_names[i]] = actions[i] 
                 total += actions[i]
                 #if actions[i] < minimum:
                 #    minimum = actions[i]
+
         if total == 0:
             total = 1
 
-        #float_int_scaler = 1 / minimum
+        tester.test_not_nan(total)
 
-        #print("loading action dict: " + str(timer.get_time()))
-
-        #timer.start_timer()
 
         for stock, action in actions_dict.items():       
             actions_dict[stock] = action / total #make all actions sum to 1 
-            #actions_dict[stock] =  np.round(action * float_int_scaler) #round to make sure it is an integer
 
-        #print("manipulate dict: " + str(timer.get_time()))
 
         #timer.start_timer()
         self.portfolio.update(actions_dict)
@@ -219,11 +227,16 @@ class Market_Environment:
 
         #timer.start_timer()
         reward = self.compute_rewards()
+
+        tester.test_not_nan(reward)
         #print("compute_rewards: " + str(timer.get_time()))
         done = (day_global + 1 == self.total_days)
 
         if math.isnan(reward):
             abc = 0 
+
+        if done:
+            print(self.portfolio.get_total_value())
 
         return observations, reward, done
 
