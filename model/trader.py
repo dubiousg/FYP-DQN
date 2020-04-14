@@ -3,6 +3,7 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 import datetime
+import os
 from benchmarking.timer import Timer
 #https://towardsdatascience.com/deep-reinforcement-learning-build-a-deep-q-network-dqn-to-play-cartpole-with-tensorflow-2-and-gym-8e105744b998
 tf.executing_eagerly() 
@@ -10,9 +11,11 @@ tf.executing_eagerly()
 #tf.compat.v1.enable_eager_execution()
 timer = Timer()
 
+
 #2 define q-network function:
 class Model(tf.keras.Model):
 
+    model = None
     #num_stocks = 500
     
     def __init__(self, num_states, hidden_units, num_stocks):
@@ -39,9 +42,8 @@ class Model(tf.keras.Model):
             print(z)
         z = self.output_layer(z) 
         output = keras.activations.relu(z, alpha=0, max_value=None, threshold=0)
-        #with tf.Session() as sess:  
-        #print(output[0])
         return output
+
 
 class DQN:
     def __init__(self, num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr):
@@ -67,14 +69,10 @@ class DQN:
 
             inp = np.array(inp, dtype=np.float32)
             inp = np.atleast_2d(inp)
-            #inp = np.asarray(inp)
+
             inp = self.model(inp)
             inp = inp.numpy()[0][0]
-            #init = tf.compat.v1.global_variables_initializer()
-            #with tf.compat.v1.Session() as sess:
-                #sess.run(init)
-                #inp = sess.run(inp)
-                #inp = inp.numpy()
+
             stock_weights[i] = inp
             i += 1
         #ins = tf.convert_to_tensor(ins, dtype=tf.float32)
@@ -106,21 +104,11 @@ class DQN:
         if np.random.random() < epsilon:
             #allocate weights summing up to one
             stock_weights = np.random.dirichlet(np.ones(self.num_stocks), size = 1)[0]
-            #print(stock_weights)
-            #action = np.random.choice(self.num_stocks, self.num_stocks, )
         else:
             #change to return a predicted weight allocation
-            #action = np.argmax(self.predict(np.atleast_2d(states))[0])
             stock_weights = self.predict(np.atleast_2d(states))
         return stock_weights
 
-    '''
-    def get_action(self, states, epsilon):
-        if np.random.random() < epsilon:
-            return np.random.choice(self.num_actions)
-        else:
-            return np.argmax(self.predict(np.atleast_2d(states))[0])
-    '''
     def add_experience(self, exp):
         if len(self.experience['s']) >= self.max_experiences:
             for key in self.experience.keys():
@@ -134,6 +122,15 @@ class DQN:
         for v1, v2 in zip(variables1, variables2):
             v1.assign(v2.numpy())
 
+    #desc:
+    def save_DQN(self, path):
+        self.model.save('path_to_my_model.h5')
+        #save experience dicy
+
+    def load_DQN(self, path):
+        self.model = keras.models.load_model('path_to_my_model.h5')
+
+    
 #change function name to "run_trade_session"?
 def run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
     rewards = 0
@@ -185,6 +182,7 @@ def run(market):
     TargetNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
     N = 200
     total_rewards = np.empty(N)
+    max_reward = float("-inf")
     epsilon = 0.99
     decay = 0.9999
     min_epsilon = 0.1
@@ -193,6 +191,10 @@ def run(market):
         print("running trade session: " + str(n))
         total_reward = run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step)
         total_rewards[n] = total_reward
+        if max_reward < total_reward: 
+            max_reward = total_reward
+
+
         avg_rewards = total_rewards[max(0, n - 100):(n + 1)].mean()
         with summary_writer.as_default():
             tf.summary.scalar('episode reward', total_reward, step=n)
@@ -200,5 +202,3 @@ def run(market):
         if n % 100 == 0:
             print("episode:", n, "episode reward:", total_reward, "eps:", epsilon, "avg reward (last 100):", avg_rewards)
     print("avg reward for last 100 episodes:", avg_rewards)
-    #make_video(env, TrainNet)
-    #market.close()
