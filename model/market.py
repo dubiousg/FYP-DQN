@@ -51,16 +51,16 @@ class Portfolio:
             data_array = stock_data[key][0][1]
             cash_change = data_array[day_global][4] #the cash recieved or taken from buying or selling a stock 
             cash_change = cash_change * (- volume)
-            if volume % 1 != 0:
-                gppd == 0
+            #if volume % 1 != 0:
+            #    gppd == 0
 
             tester.test_equal(volume % 1, 0)
             self.update_stock(stock, volume, cash_change)
 
     def update_stock(self, stock, volume, cash_change):
         self.stocks[stock] += volume
-        if self.stocks[stock] % 1 != 0:
-            gggg = 0
+        #if self.stocks[stock] % 1 != 0:
+        #    gggg = 0
         tester.test_equal(self.stocks[stock] % 1, 0)
 
         self.cash += cash_change
@@ -75,10 +75,10 @@ class Portfolio:
 
             #check if stock is still in circulation
             if day_global < len(stock_data['data'][i]):
-                tedee = stock_data['data'][i][day_global][4]
+                #tedee = stock_data['data'][i][day_global][4]
                 temp_total += (self.stocks[stock] * stock_data['data'][i][day_global][4])
-                if math.isnan(temp_total):
-                    abdc = 0
+                #if math.isnan(temp_total):
+                #    abdc = 0
                 tester.test_not_nan(temp_total)
             elif day_global == len(stock_data['data'][i]): #sell all stock with last previous value if no longer in circulation
                 temp_total -= self.cash
@@ -232,8 +232,8 @@ class Market_Environment:
         #print("compute_rewards: " + str(timer.get_time()))
         done = (day_global + 1 == self.total_days)
 
-        if math.isnan(reward):
-            abc = 0 
+        #if math.isnan(reward):
+        #    abc = 0 
 
         if done:
             print(self.portfolio.get_total_value())

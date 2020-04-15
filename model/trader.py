@@ -4,6 +4,7 @@ from tensorflow import keras
 import numpy as np
 import datetime
 import os
+from os.path import isfile
 from benchmarking.timer import Timer
 #https://towardsdatascience.com/deep-reinforcement-learning-build-a-deep-q-network-dqn-to-play-cartpole-with-tensorflow-2-and-gym-8e105744b998
 tf.executing_eagerly() 
@@ -109,6 +110,10 @@ class DQN:
             stock_weights = self.predict(np.atleast_2d(states))
         return stock_weights
 
+    def get_action_test(self, states):
+        stock_weights = self.predict(np.atleast_2d(states))
+        return stock_weights
+
     def add_experience(self, exp):
         if len(self.experience['s']) >= self.max_experiences:
             for key in self.experience.keys():
@@ -122,17 +127,27 @@ class DQN:
         for v1, v2 in zip(variables1, variables2):
             v1.assign(v2.numpy())
 
-    #desc:
-    def save_DQN(self, path):
-        self.model.save('path_to_my_model.h5')
-        #save experience dicy
+    #desc: save the DQN model and experience
+    #input: name - name of what it is being saved 
+    def save_DQN(self, name):
+        model_path = os.getcwd() + "/Dissertation_Project/data/models/" + name
+       # self.model.compile()
+        #self.model.fit(np.ones(10))
+        self.model.save_weights(model_path, save_format="tf")
+        #save experience dict
+        exp_path = os.getcwd() + "/Dissertation_Project/data/experience/" + name + ".npy"
+        np.save(exp_path, self.experience)
 
-    def load_DQN(self, path):
-        self.model = keras.models.load_model('path_to_my_model.h5')
+    def load_DQN(self, name):
+        model_path = os.getcwd() + "/Dissertation_Project/data/models/" + name
+        exp_path = os.getcwd() + "/Dissertation_Project/data/experience/" + name + ".npy"
+        if isfile(model_path) and isfile(exp_path):
+            self.model = keras.models.load_model(model_path)
+            self.experience = np.load(exp_path,allow_pickle='TRUE').item()
 
     
 #change function name to "run_trade_session"?
-def run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
+def train_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
     rewards = 0
     iter = 0
     done = False
@@ -161,6 +176,17 @@ def run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
         
     return rewards
 
+def test_trade_session(market, TrainNet, epsilon, copy_step):
+    done = False
+    observations = market.reset()
+    while not done:
+
+        actions = TrainNet.get_action_test(observations)
+
+        observations, reward, done = market.trade(actions)
+        
+    return reward
+
 
 def run(market):
     #env = gym.make('CartPole-v0')
@@ -180,6 +206,7 @@ def run(market):
 
     TrainNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
     TargetNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
+
     N = 200
     total_rewards = np.empty(N)
     max_reward = float("-inf")
@@ -189,11 +216,12 @@ def run(market):
     for n in range(N):
         epsilon = max(min_epsilon, epsilon * decay)
         print("running trade session: " + str(n))
-        total_reward = run_trade_session(market, TrainNet, TargetNet, epsilon, copy_step)
+        total_reward = train_trade_session(market, TrainNet, TargetNet, epsilon, copy_step)
         total_rewards[n] = total_reward
         if max_reward < total_reward: 
             max_reward = total_reward
-
+            TrainNet.save_DQN("best_train")
+            TargetNet.save_DQN("best_target")
 
         avg_rewards = total_rewards[max(0, n - 100):(n + 1)].mean()
         with summary_writer.as_default():
@@ -202,3 +230,20 @@ def run(market):
         if n % 100 == 0:
             print("episode:", n, "episode reward:", total_reward, "eps:", epsilon, "avg reward (last 100):", avg_rewards)
     print("avg reward for last 100 episodes:", avg_rewards)
+
+def run_test(market):
+    gamma = 0.99
+    copy_step = 25
+    num_states = market.get_num_states()
+    num_stocks = 500
+    hidden_units = [10, 10]
+    max_experiences = 10000
+    min_experiences = 100
+    batch_size = 32
+    lr = 1e-2
+    epsilon = 0.99
+
+    TrainNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
+    TrainNet.load_DQN("best_train")
+
+    test_trade_session(market, TrainNet, epsilon, copy_step)
