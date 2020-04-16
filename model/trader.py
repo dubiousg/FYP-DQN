@@ -142,7 +142,8 @@ class DQN:
         model_path = os.getcwd() + "/Dissertation_Project/data/models/" + name
         exp_path = os.getcwd() + "/Dissertation_Project/data/experience/" + name + ".npy"
         if isfile(model_path) and isfile(exp_path):
-            self.model = keras.models.load_model(model_path)
+            #self.model = keras.models.load_model(model_path)
+            self.model.load_weights(model_path)
             self.experience = np.load(exp_path,allow_pickle='TRUE').item()
 
     
@@ -179,13 +180,20 @@ def train_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
 def test_trade_session(market, TrainNet, epsilon, copy_step):
     done = False
     observations = market.reset()
+    rewards = 0 
+    test_dict = [] #index is the day, 0 = day 1
     while not done:
 
         actions = TrainNet.get_action_test(observations)
 
         observations, reward, done = market.trade(actions)
-        
-    return reward
+        allocation = market.get_allocation()
+
+        test_dict.append({"rewards" : reward,  "allocation": allocation)
+
+        rewards += reward
+
+    return rewards
 
 
 def run(market):
@@ -209,7 +217,7 @@ def run(market):
 
     N = 200
     total_rewards = np.empty(N)
-    max_reward = float("-inf")
+    max_reward = 4000000
     epsilon = 0.99
     decay = 0.9999
     min_epsilon = 0.1
@@ -243,7 +251,10 @@ def run_test(market):
     lr = 1e-2
     epsilon = 0.99
 
-    TrainNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
-    TrainNet.load_DQN("best_train")
+    TestNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
+    TestNet.load_DQN("best_train")
 
-    test_trade_session(market, TrainNet, epsilon, copy_step)
+    test_dict = []
+    test_dict = test_trade_session(market, TestNet, epsilon, copy_step)
+    print("total reward:" + str(test_dict["rewards"][0]))
+

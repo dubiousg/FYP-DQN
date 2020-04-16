@@ -244,7 +244,7 @@ class Market_Environment:
         global day_global
         day_global = 0
         self.portfolio.reset()
-
+    
         return self.get_observations()
 
 #Ten states, one for each feature (continous values)
