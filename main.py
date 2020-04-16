@@ -10,8 +10,8 @@ from os.path import isfile, join
 
 market_env = Market_Environment("processed stock data")
 
-trader.run(market_env)
-
+#trader.run(market_env)
+trader.run_test(market_env)
 '''
 index=[0,1,2,3]
 columns=['one', 'two']
