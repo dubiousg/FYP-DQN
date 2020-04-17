@@ -100,6 +100,9 @@ class Portfolio:
         self.cash = 1000000
         self.total_value = self.cash
 
+    def get_stocks(self):
+        return self.stocks
+
 #contains the trader's portfolio info: stocks, cash, total value,  
 
 #contains stock data of the market
@@ -250,6 +253,18 @@ class Market_Environment:
 #Ten states, one for each feature (continous values)
     def get_num_states(self):
         return 10 
+
+    def get_allocation(self):
+        return self.portfolio.get_stocks()
+
+    def get_portfolio_value(self):
+        return self.portfolio.get_total_value() 
+
+    def test_mode(self):
+        global day_global
+        day_global = round(self.total_days * 0.7)
+
+
 
           
 

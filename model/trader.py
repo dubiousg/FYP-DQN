@@ -180,20 +180,22 @@ def train_trade_session(market, TrainNet, TargetNet, epsilon, copy_step):
 def test_trade_session(market, TrainNet, epsilon, copy_step):
     done = False
     observations = market.reset()
+    market.test_mode()
     rewards = 0 
-    test_dict = [] #index is the day, 0 = day 1
+    data_list = [] #index is the day, 0 = day 1
     while not done:
 
         actions = TrainNet.get_action_test(observations)
 
         observations, reward, done = market.trade(actions)
         allocation = market.get_allocation()
+        value = market.get_portfolio_value()
 
-        test_dict.append({"rewards" : reward,  "allocation": allocation)
+        data_list.append({"reward" : reward,  "allocation": allocation, "value" : value})
 
         rewards += reward
 
-    return rewards
+    return data_list
 
 
 def run(market):
@@ -254,7 +256,7 @@ def run_test(market):
     TestNet = DQN(num_states, num_stocks, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
     TestNet.load_DQN("best_train")
 
-    test_dict = []
-    test_dict = test_trade_session(market, TestNet, epsilon, copy_step)
-    print("total reward:" + str(test_dict["rewards"][0]))
+    data_list = test_trade_session(market, TestNet, epsilon, copy_step)
+    #print("test data: " + str(data_list))
+    return data_list
 
