@@ -30,12 +30,9 @@ class Portfolio:
 
         for stock in stock_names:
             self.stocks[stock] = 0
-
-        #print(self.stocks)
-        #todo
     
-    #desc: updates stocks in the portfolio during a trading session
-    #input: actions_dict - 
+    #desc:  updates stocks in the portfolio during a trading session
+    #input: actions_dict - a dictionary of stock allocations
     def update(self, actions_dict):
         #sell all stocks before resetting weights
         for stock, volume in self.stocks.items():
@@ -61,34 +58,31 @@ class Portfolio:
             tester.test_equal(volume % 1, 0)
             self.update_stock(stock, volume, cash_change)
 
-    #desc:
-    #input:
-    #output:
+    #desc:  updates a single stock during the trade
+    #input: stock       - string indicating the stock, 
+    #       volume      - number of stocks to buy (integer)
+    #       cash_change - cash change of the portfolio (float)
     def update_stock(self, stock, volume, cash_change):
         self.stocks[stock] += volume
-        #if self.stocks[stock] % 1 != 0:
-        #    gggg = 0
+
         tester.test_equal(self.stocks[stock] % 1, 0)
 
         self.cash += cash_change
 
-    #desc:
-    #input:
-    #output:
+    #desc: updates the value and cash of the portfolio
     def update_value(self):
         global day_global, stock_data
         temp_total = self.cash
 
-        #for stock in self.stocks:
+        
         for i in range(0, len(stock_data['data'])):
             stock = stock_data['stock'][i]
 
             #check if stock is still in circulation
             if day_global < len(stock_data['data'][i]):
-                #tedee = stock_data['data'][i][day_global][4]
+                
                 temp_total += (self.stocks[stock] * stock_data['data'][i][day_global][4])
-                #if math.isnan(temp_total):
-                #    abdc = 0
+   
                 tester.test_not_nan(temp_total)
             elif day_global == len(stock_data['data'][i]): #sell all stock with last previous value if no longer in circulation
                 temp_total -= self.cash
@@ -97,39 +91,35 @@ class Portfolio:
                 self.update_stock(stock, -self.stocks[stock], cash_change)
                 tester.test_not_nan(temp_total)
                 temp_total += self.cash
-                #temp_total += (self.stocks[stock] * stock_data['data'][i][day_global - 1][4])
+                
         self.total_value = temp_total
 
-    #desc:
-    #input:
-    #output:
+    #desc: returns total value
     def get_total_value(self):
         return self.total_value
 
-    #desc:
-    #input:
-    #output:
+    #desc: resets portfolios: stocks, cash and total value
     def reset(self):
         for stock in self.stocks.keys():
             self.stocks[stock] = 0
-        #self.stocks = {} #stock name : #stocks
         self.cash = 1000000
         self.total_value = self.cash
 
+    #desc: return portfolio's stocks
     def get_stocks(self):
         return self.stocks
 
-#contains the trader's portfolio info: stocks, cash, total value,  
 
-#contains stock data of the market
-
+#The Market_Environment class:
+#   *contains the portfolio
+#   *updates stock data
+#   *interacts with trader.py
 class Market_Environment:
     portfolio = None
     #read in the clean stock and store them
 
-    #desc:
-    #input:
-    #output:
+    #desc:  constructor, initializes the portfolio, stock data and total number of days
+    #input: stocks_folder - string, contains the folder name in the data directory
     def __init__(self, stocks_folder):
         global stock_data
         print("initialising market")
@@ -137,7 +127,6 @@ class Market_Environment:
         folder = join(dir, stocks_folder)
         self.stock_names = []
 
-        #stock_data_temp = {}
         stock_data_temp = []
         files = [f for f in listdir(folder) if isfile(join(folder, f))]
         for f in files:
@@ -157,16 +146,15 @@ class Market_Environment:
                           'formats':['U10', d_type]})
 
         stock_data['stock'] = self.stock_names
-        #print(stock_data_temp.values())
+        
         stock_data['data'] = stock_data_temp
 
         self.total_days = len(max(stock_data_temp, key = lambda x: len(x)))
         self.portfolio = Portfolio(self.stock_names)
     #provide portfolio data, (from this possible actions can be computed)
     
-    #desc:
-    #input:
-    #output:
+    #desc:   computes the reward of this trade
+    #output: returns the cash change for this trade
     def compute_rewards(self):
         prev_value = self.portfolio.get_total_value()
         self.portfolio.update_value()
@@ -174,16 +162,15 @@ class Market_Environment:
         reward = new_value - prev_value
         return reward
 
-    #desc:
-    #input:
-    #output:
+    #desc: retrieves observations for next trading day
+    #output: stock data for the next trading day (a list of dataframes)
     def get_observations(self):
-        #returns a list of dataframes
+        
         global day_global, stock_data
-        #print(stock_data['data'][0]['A'].dtype)
+        
         d_type = stock_data['data'][0].dtype
         next_state = np.ndarray(shape=(len(stock_data['data']),), dtype=d_type)
-        #should return largest length of all stocks
+        
         if day_global + 1 < self.total_days:
             i = 0
             for data in stock_data['data']:
@@ -199,14 +186,13 @@ class Market_Environment:
                 
         return next_state
 
-    #represents a day of trading: 
-    #actions is transformed into a  dictionary of stocks and the amount of trades made for them
-    #actions are subjected to conditions such that it cannot buy/sell more stocks that is possible
-    #desc:
-    #input:
-    #output:
+    #desc: represents a day of trading: 
+    #      actions is transformed into a  dictionary of stocks and the amount of trades made for them
+    #      actions are subjected to conditions such that it cannot buy/sell more stocks that is possible
+    #input: actions - the actions provided by the dqn, one per stock
+    #output: returns the observations for next trading day, the rewards and boolean, done
     def trade(self, actions):        
-        #convert actions
+
         global day_global, stock_data
         actions_dict = {}
 
@@ -224,8 +210,6 @@ class Market_Environment:
 
                 actions_dict[self.stock_names[i]] = actions[i] 
                 total += actions[i]
-                #if actions[i] < minimum:
-                #    minimum = actions[i]
 
         if total == 0:
             total = 1
@@ -236,13 +220,9 @@ class Market_Environment:
         for stock, action in actions_dict.items():       
             actions_dict[stock] = action / total #make all actions sum to 1 
 
-
-        #timer.start_timer()
         self.portfolio.update(actions_dict)
-        #all of this should be handled by the portfolio class
 
-        day_global += 1
-        
+        day_global += 1     
 
         observations = self.get_observations()
 
@@ -256,6 +236,8 @@ class Market_Environment:
 
         return observations, reward, done
 
+    #desc: resets portfolio and the day
+    #output: returns the initial observations
     def reset(self):
         global day_global
         day_global = 0
@@ -263,35 +245,28 @@ class Market_Environment:
     
         return self.get_observations()
 
-#Ten states, one for each feature (continous values)
-    #desc:
-    #input:
-    #output:
+    #desc: returns the number of states
+    #output: the number of states (always ten)
     def get_num_states(self):
         return 10 
 
-    #desc:
-    #input:
-    #output:
+    #desc: gets the stocks fo the portfolio
+    #output: the stocks of the portfolio (dict)
     def get_allocation(self):
         return self.portfolio.get_stocks()
 
-    #desc:
-    #input:
-    #output:
+    #desc: returns total value (cash + stocks value)
+    #output: total portfolio value
     def get_portfolio_value(self):
         return self.portfolio.get_total_value() 
 
-        #desc:
-    #input:
-    #output:
+    #desc: sets the testing data to the last 30%
     def test_mode(self):
         global day_global
         day_global = round(self.total_days * 0.7)
 
-    #desc:
-    #input:
-    #output:
+    #desc: returns the prices of the stock of the trading day
+    #output: stock prices
     def get_prices(self):
         global stock_data
         prices = {}
