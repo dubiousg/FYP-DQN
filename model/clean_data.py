@@ -5,6 +5,9 @@ import os
 from os import listdir
 from os.path import isfile, join
 
+#desc: calculates the rsi of a stock for every trading day
+#input: close - the closing price of the stock for every day
+#ouput: the rsi for every trading day
 def relative_strength_index(close):
     days = 14
     avg_gain = 0
@@ -39,6 +42,7 @@ def relative_strength_index(close):
 
         gain = (prev_gain * 13) + avg_gain
         loss = (prev_loss * 13) + avg_loss
+
         if loss == 0:
             rs = 0
         else:
@@ -48,6 +52,10 @@ def relative_strength_index(close):
 
     return rsi
 
+#desc: calculates the rsi of a stock for every trading day
+#input: close - the closing price of the stock for every day
+#       volume - the volume of the stock for every day 
+#ouput: the obv for every trading day
 def on_balance_volume(close, volume):
     obv = np.empty(shape=(close.size))
     obv[0] = volume[0] 
@@ -61,27 +69,30 @@ def on_balance_volume(close, volume):
 
     return obv
 
+#desc: writes csv files of stock data
+#input: data - the stock data to write
 def write_data(data):
     dir = os.getcwd() + "/Dissertation_Project/data/processed stock data"
-    #dir = 'C:/Users/Cooper/VSCodeWorkSpace/Dissertation_Project/data/processed stock data'
     for stock in data.keys():
         file_name = "clean_" + stock + ".csv"
         file = join(dir, file_name)
         data[stock]['Name'] = np.full(shape=(data[stock]['close'].size), fill_value=stock)
         data[stock].to_csv(file)
 
-
-
+#class data_cleaner
+#   *loads data from csv files and cleans them
+#   *can also save cleaned data
 class data_cleaner:
     raw_stock_data =  {} 
 
     #def __init__(self, file):
 
-    #add stocks from a folder to the raw_stock_data dictionary
+    #desc: add stocks from a folder to the raw_stock_data dictionary
+    #input: folder_dir - the folder directory of the data
     def add_files_from_folder(self, folder_dir):
         dir = os.getcwd() + "/Dissertation_Project/data"
         folder = join(dir, folder_dir)
-        #print(isfile(listdir(folder)[1]))
+
         files = [f for f in listdir(folder) if isfile(join(folder, f))]
         for f in files:
             df = pd.read_csv(join(folder, f))
@@ -111,12 +122,15 @@ class data_cleaner:
 
         write_data(self.raw_stock_data)
 
+    #desc: loads a single csv file
+    #input: file - the file to get from the data
     def add_file(self, file):
         file = join('C:/Users/Cooper/VSCodeWorkSpace/Dissertation/data/', file)
         df = pd.read_csv(file)
         self.raw_stock_data[df['Name'][0]] = df #add to dictionary, stock name as the key
 
-    def run(self): #for now this is a test function
+    #desc: originally a testing function, essentially deprecated
+    def run(self): 
         print(self.raw_stock_data['AAL'].head())
         print(self.raw_stock_data['XOM'].head())
         print(self.raw_stock_data['AAL'].iloc[25])
