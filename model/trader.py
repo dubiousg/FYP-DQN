@@ -190,8 +190,9 @@ def test_trade_session(market, TrainNet, epsilon, copy_step):
         observations, reward, done = market.trade(actions)
         allocation = market.get_allocation()
         value = market.get_portfolio_value()
+        prices = market.get_prices()
 
-        data_list.append({"reward" : reward,  "allocation": allocation, "value" : value})
+        data_list.append({"reward" : reward,  "allocation": allocation, "value" : value, "prices" : prices})
 
         rewards += reward
 

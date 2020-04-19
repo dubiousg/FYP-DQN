@@ -224,11 +224,9 @@ class Market_Environment:
 
         day_global += 1
         
-        #timer.start_timer()
-        observations = self.get_observations()
-        #print("get_obsverations: " + str(timer.get_time()))
 
-        #timer.start_timer()
+        observations = self.get_observations()
+
         reward = self.compute_rewards()
 
         tester.test_not_nan(reward)
@@ -264,6 +262,15 @@ class Market_Environment:
         global day_global
         day_global = round(self.total_days * 0.7)
 
+    def get_prices(self):
+        global stock_data
+        prices = {}
+
+        for i in range(len(stock_data)):
+            if day_global < len(stock_data["data"][i]):
+                prices[stock_data["stock"][i]] = stock_data["data"][i][day_global][4]
+
+        return prices
 
 
           
