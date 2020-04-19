@@ -1,12 +1,15 @@
 import unittest
 import math
 
+#Tester class
+#   *a unit testing class that uses assertions
+#   *all functions use assertions to test inputs
+#   *function behaviour should be apparent from name
 class Tester(unittest.TestCase):
 
     def test_equal(self, input, expected):
         self.assertEqual(input, expected)
 
-    #cannot be used for nans
     def test_not_equal(self, input, expected):
         self.assertFalse(input == expected, "failed")
 
