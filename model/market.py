@@ -15,12 +15,16 @@ tester = Tester()
 day_global = 0 #day should correspond to the index of the current day
 stock_data = np.ones(1)
 
-
+#The Portfolio class:
+#   *contains the assets of the trader
+#   *updates the trader's assets
 class Portfolio:
     
+    #desc: a constructor, initializes assets and a stocks dictionary
+    #input: stock_names - list of strings containing stock names
     def __init__(self, stock_names):
         print("initialising portfolio")
-        self.stocks = {} #stock name : #stocks
+        self.stocks = {} #stock name : stocks, holds portfolio stocks
         self.cash = 1000000
         self.total_value = self.cash
 
@@ -30,6 +34,8 @@ class Portfolio:
         #print(self.stocks)
         #todo
     
+    #desc: updates stocks in the portfolio during a trading session
+    #input: actions_dict - 
     def update(self, actions_dict):
         #sell all stocks before resetting weights
         for stock, volume in self.stocks.items():
@@ -51,12 +57,13 @@ class Portfolio:
             data_array = stock_data[key][0][1]
             cash_change = data_array[day_global][4] #the cash recieved or taken from buying or selling a stock 
             cash_change = cash_change * (- volume)
-            #if volume % 1 != 0:
-            #    gppd == 0
 
             tester.test_equal(volume % 1, 0)
             self.update_stock(stock, volume, cash_change)
 
+    #desc:
+    #input:
+    #output:
     def update_stock(self, stock, volume, cash_change):
         self.stocks[stock] += volume
         #if self.stocks[stock] % 1 != 0:
@@ -65,6 +72,9 @@ class Portfolio:
 
         self.cash += cash_change
 
+    #desc:
+    #input:
+    #output:
     def update_value(self):
         global day_global, stock_data
         temp_total = self.cash
@@ -90,9 +100,15 @@ class Portfolio:
                 #temp_total += (self.stocks[stock] * stock_data['data'][i][day_global - 1][4])
         self.total_value = temp_total
 
+    #desc:
+    #input:
+    #output:
     def get_total_value(self):
         return self.total_value
 
+    #desc:
+    #input:
+    #output:
     def reset(self):
         for stock in self.stocks.keys():
             self.stocks[stock] = 0
@@ -110,6 +126,10 @@ class Portfolio:
 class Market_Environment:
     portfolio = None
     #read in the clean stock and store them
+
+    #desc:
+    #input:
+    #output:
     def __init__(self, stocks_folder):
         global stock_data
         print("initialising market")
@@ -144,6 +164,9 @@ class Market_Environment:
         self.portfolio = Portfolio(self.stock_names)
     #provide portfolio data, (from this possible actions can be computed)
     
+    #desc:
+    #input:
+    #output:
     def compute_rewards(self):
         prev_value = self.portfolio.get_total_value()
         self.portfolio.update_value()
@@ -151,6 +174,9 @@ class Market_Environment:
         reward = new_value - prev_value
         return reward
 
+    #desc:
+    #input:
+    #output:
     def get_observations(self):
         #returns a list of dataframes
         global day_global, stock_data
@@ -176,6 +202,9 @@ class Market_Environment:
     #represents a day of trading: 
     #actions is transformed into a  dictionary of stocks and the amount of trades made for them
     #actions are subjected to conditions such that it cannot buy/sell more stocks that is possible
+    #desc:
+    #input:
+    #output:
     def trade(self, actions):        
         #convert actions
         global day_global, stock_data
@@ -211,16 +240,6 @@ class Market_Environment:
         #timer.start_timer()
         self.portfolio.update(actions_dict)
         #all of this should be handled by the portfolio class
-        '''
-        for stock, action in actions_dict.items():           
-            volume = action #volume bought or sold: + for bought - for sold
-            key = stock_data['stock'] == stock
-            data_array = stock_data[key][0][1]
-            cash_change = data_array[day_global][4] #the cash recieved or taken from buying or selling a stock 
-            cash_change = cash_change * (- volume)
-            self.portfolio.update_stock(stock, volume, cash_change)    '''
-
-        #print("updating stocks: " + str(timer.get_time()))
 
         day_global += 1
         
@@ -230,11 +249,7 @@ class Market_Environment:
         reward = self.compute_rewards()
 
         tester.test_not_nan(reward)
-        #print("compute_rewards: " + str(timer.get_time()))
         done = (day_global + 1 == self.total_days)
-
-        #if math.isnan(reward):
-        #    abc = 0 
 
         if done:
             print(self.portfolio.get_total_value())
@@ -249,19 +264,34 @@ class Market_Environment:
         return self.get_observations()
 
 #Ten states, one for each feature (continous values)
+    #desc:
+    #input:
+    #output:
     def get_num_states(self):
         return 10 
 
+    #desc:
+    #input:
+    #output:
     def get_allocation(self):
         return self.portfolio.get_stocks()
 
+    #desc:
+    #input:
+    #output:
     def get_portfolio_value(self):
         return self.portfolio.get_total_value() 
 
+        #desc:
+    #input:
+    #output:
     def test_mode(self):
         global day_global
         day_global = round(self.total_days * 0.7)
 
+    #desc:
+    #input:
+    #output:
     def get_prices(self):
         global stock_data
         prices = {}
