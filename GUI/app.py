@@ -8,8 +8,11 @@ from tkinter import *
 import datetime
 import re
 
+#GUI Class
+#   *uses tkinter and matplotlib to create a lo-fi analytical system
 class GUI:
 
+    #desc: constructor, initializes the relevant variables, buttons, canvas, frame, ect
     def __init__(self):
         self.day_one = "5/8/16" #index 881 of processed data
         self.date_one = datetime.datetime(day=5, month=8, year=2016)
@@ -20,8 +23,6 @@ class GUI:
 
         self.canvas = tk.Canvas(self.root, height=self.height, width=self.width, bg="#263d42")
         self.canvas.pack()
-
-
 
         self.frame = tk.Frame(self.root, bg="#3e646c")
 
@@ -50,8 +51,6 @@ class GUI:
 
         self.labels["run"] = Label(self.frame, text="Not Running")
 
-        #top = tk.Toplevel(self.root)
-
         self.cal = Calendar(self.canvas,
         font="Arial 14", selectmode='day',
         cursor="hand1", year=2018, month=2, day=5)
@@ -59,6 +58,7 @@ class GUI:
         self.cal.pack(fill="both", expand=True)
         self.canvas.create_window((self.width * 0.6, 0), window=self.cal, anchor='nw')
 
+    #desc: runs the test version of the trader, collects the trading data
     def run_test(self, event):
         print("running test")
         self.states["testing"] = True
@@ -67,6 +67,7 @@ class GUI:
         self.states["testing"] = False
         self.states["tested"] = True
 
+    #desc: shows the chart of portfolio values against the trading days
     def update_chart(self, event):
         data = []
         for item in self.test_list:
@@ -75,9 +76,8 @@ class GUI:
         plt.plot(data)
         plt.show()
 
+    #desc: shows a pie chart of stock allocations on a given day
     def show_allocations(self, event):
-        #https://matplotlib.org/3.1.1/gallery/pie_and_polar_charts/pie_features.html
-        #print(self.cal.get_date())
 
         if self.states["tested"]:
             day = self.calc_day(self.cal.get_date()) #days is an index
@@ -90,7 +90,6 @@ class GUI:
                     if stock in self.test_list[day]["prices"]:
                         total_value += amt * self.test_list[day]["prices"][stock]
 
-
                 stocks = []
                 amounts = []
                 for stock, amt in allocations.items():
@@ -98,13 +97,7 @@ class GUI:
                         amounts.append(amt / total_value)
                         stocks.append(stock)
 
-                
-
                 labels = stocks
-
-                #for amt in allocations.vals()
-                #    total_num_stocks += amt
-                #explode = (0, 0.1, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
 
                 fig = plt.figure()
                 ax = fig.add_axes([0,0,1,1])
@@ -112,6 +105,7 @@ class GUI:
                 ax.pie(amounts, labels = labels, autopct='%1.1f%%')
                 plt.show()
 
+    #desc: shows the roi of the portfolio
     def show_roi(self, event):
         if self.states["tested"]:
             roi = (self.test_list[364]["value"] -  self.test_list[0]["value"]) / self.test_list[0]["value"]
@@ -119,10 +113,12 @@ class GUI:
             self.labels["roi"] = Label(self.frame, text="Yearly roi: " + str(roi))
             self.labels["roi"].grid(row=1, column=3)
 
+    #desc: runs the gui loop
     def run_gui(self):
         self.root.mainloop()
 
     #desc: gives index based on difference between first day and choosen
+    #input: date - the trading date as a mm/dd/yy string
     def calc_day(self, date):
         value_p = re.compile(r'\d+')
         (month, day, year) = value_p.findall(date)
@@ -131,23 +127,6 @@ class GUI:
         index = (date - self.date_one).days
         return index
 
-
-#todo list:
-#1 run a trading period with a finished model
-
-
-
-
-
-
-#2 create analytics for
-#2.1 yearly roi
-
-
-
-#2.2 daily portolfio value
-
-#2.3 view asset allocations of the stocks at the current day
 
 
 
