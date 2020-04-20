@@ -16,7 +16,7 @@ class Tester(unittest.TestCase):
     def test_not_nan(self, input):
         self.assertFalse(math.isnan(input))
 
-    def test_greater(self, threshold, input):
+    def test_greater(self, input, threshold):
         self.assertTrue(input < threshold)
         self.assertFalse(input > threshold)
 
