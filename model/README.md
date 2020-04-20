@@ -1,8 +1,13 @@
 <html>
-<h1> The files </h1>
+<h1> The Model </h1>
+  <div>
+This model folder contains a python package. <br>
+If this project is downloaded an empty __init__.py file
+needs to be added in order to run the other files.
+  </div>
 <h2> clean_data.py </h2>
 <div> 
-Contains the data_cleaner class which is used to process stock data stored in csv files.
+Contains the data_cleaner class which is used to process stock data stored in csv files.<br>
 This class can save cleaned csv files, containing the extracted features.
 
 These features include: stock's close, open, high and low price, volume, 
