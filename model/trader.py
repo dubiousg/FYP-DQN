@@ -92,7 +92,7 @@ class DQN:
 
             inp = self.model(inp)
             inp = inp.numpy()[0][0]
-            tester.test_type(inp, float)
+            tester.test_type(inp, np.float32)
             stock_weights[i] = inp
             i += 1
         
@@ -127,7 +127,7 @@ class DQN:
     #       epsilon - the chance to pick actions randomly
     #output: the next action for the stock (float)
     def get_action(self, states, epsilon):
-        tester.test_greater(epsilon, 1)
+        tester.test_greater(epsilon, 1) #testing smaller here
         if np.random.random() < epsilon:
             #allocate weights summing up to one
             stock_weights = np.random.dirichlet(np.ones(self.num_stocks), size = 1)[0]
@@ -243,7 +243,7 @@ def run(market):
     gamma = 0.99
     copy_step = 25
     num_states = market.get_num_states()
-
+    market.train_mode()
     num_stocks = 500
     hidden_units = [10, 10]
     max_experiences = 10000
@@ -259,7 +259,8 @@ def run(market):
 
     N = 200
     total_rewards = np.empty(N)
-    max_reward = 4000000
+    #max_reward = 4000000
+    max_reward = float("-inf")
     epsilon = 0.99
     decay = 0.9999
     min_epsilon = 0.1

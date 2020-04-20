@@ -25,7 +25,7 @@ class Portfolio:
     def __init__(self, stock_names):
         print("initialising portfolio")
         self.stocks = {} #stock name : stocks, holds portfolio stocks
-        self.cash = 1000000
+        self.cash = 10000
         self.total_value = self.cash
 
         for stock in stock_names:
@@ -67,8 +67,8 @@ class Portfolio:
         self.stocks[stock] += volume
         #tester.test_equal(self.stocks[stock] % 1, 0)
         self.cash += cash_change
-        tester.test_equal(0 <= self.cash, True) #post
-        tester.test_equal(0 <= self.stock[stock], True)
+        #tester.test_equal(0 <= self.cash, True) #post
+        tester.test_equal(0 <= self.stocks[stock], True)
 
     #desc: updates the value and cash of the portfolio
     def update_value(self):
@@ -221,13 +221,14 @@ class Market_Environment:
 
         for stock, action in actions_dict.items():       
             actions_dict[stock] = action / total #make all actions sum to 1 
-
+        
         self.portfolio.update(actions_dict)
 
         day_global += 1     
 
         observations = self.get_observations()
 
+        observations = self.get_observations()
         reward = self.compute_rewards()
 
         tester.test_not_nan(reward)
@@ -266,6 +267,10 @@ class Market_Environment:
     def test_mode(self):
         global day_global
         day_global = round(self.total_days * 0.7)
+
+    #desc: sets the training data to the first 30%
+    def train_mode(self):
+        self.total_days = round(self.total_days * 0.7)
 
     #desc: returns the prices of the stock of the trading day
     #output: stock prices
