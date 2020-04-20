@@ -63,11 +63,12 @@ class Portfolio:
     #       volume      - number of stocks to buy (integer)
     #       cash_change - cash change of the portfolio (float)
     def update_stock(self, stock, volume, cash_change):
+        tester.test_equal(volume % 1, 0) #pre
         self.stocks[stock] += volume
-
-        tester.test_equal(self.stocks[stock] % 1, 0)
-
+        #tester.test_equal(self.stocks[stock] % 1, 0)
         self.cash += cash_change
+        tester.test_equal(0 <= self.cash, True) #post
+        tester.test_equal(0 <= self.stock[stock], True)
 
     #desc: updates the value and cash of the portfolio
     def update_value(self):
@@ -96,6 +97,7 @@ class Portfolio:
 
     #desc: returns total value
     def get_total_value(self):
+        tester.test_not_nan(self.total_value)
         return self.total_value
 
     #desc: resets portfolios: stocks, cash and total value

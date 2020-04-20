@@ -11,9 +11,11 @@ import datetime
 import os
 from os.path import isfile
 from benchmarking.timer import Timer
+from benchmarking.unittesting import Tester
 tf.executing_eagerly() 
 
 timer = Timer()
+tester = Tester()
 
 #The Model class:
 #   *overwrites the tf.keras.model class
@@ -90,7 +92,7 @@ class DQN:
 
             inp = self.model(inp)
             inp = inp.numpy()[0][0]
-
+            tester.test_type(inp, float)
             stock_weights[i] = inp
             i += 1
         
@@ -125,6 +127,7 @@ class DQN:
     #       epsilon - the chance to pick actions randomly
     #output: the next action for the stock (float)
     def get_action(self, states, epsilon):
+        tester.test_greater(epsilon, 1)
         if np.random.random() < epsilon:
             #allocate weights summing up to one
             stock_weights = np.random.dirichlet(np.ones(self.num_stocks), size = 1)[0]
